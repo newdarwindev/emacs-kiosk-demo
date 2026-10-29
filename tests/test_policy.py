@@ -12,10 +12,10 @@ class PolicyTests(unittest.TestCase):
         self.assertEqual(len(data), 2)
         self.assertTrue(all(e['user'] == 'SYNTHETIC_USER' for e in data))
 
-    def test_actions_are_pinned_and_read_only(self):
+    def test_actions_are_pinned_and_least_privilege(self):
         data = (ROOT / '.github/workflows/linux-image.yml').read_text()
         self.assertIn('permissions:\n  contents: read', data)
-        self.assertEqual(len(re.findall(r'uses: \S+@[0-9a-f]{40}', data)), 3)
+        self.assertEqual(len(re.findall(r'uses: \S+@[0-9a-f]{40}', data)), 5)
         self.assertNotIn('secrets.', data)
         self.assertIn('if: always()', data)
 

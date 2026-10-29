@@ -4,6 +4,31 @@ A credential-free **Alpine Linux + Emacs + tmux** live demo. It boots a real Lin
 
 **Implemented target: x86_64 BIOS/QEMU only.** ARM/aarch64, UEFI, physical hardware support, persistence, and a hardened kiosk escape policy are not implemented or claimed. The previous draft's dual-architecture claim was removed rather than represented as tested.
 
+## Download continuous builds
+
+Every successful trusted `main` push (or manual run on `main`) now publishes a
+[verified build prerelease](https://github.com/newdarwindev/emacs-kiosk-demo/releases).
+**The newest published build prerelease is the latest successful published build.**
+Prereleases cannot use GitHub's stable “Latest” badge; `/releases/latest` is not the download link.
+
+Each release has five downloadable assets:
+
+- `emacs-kiosk-x86_64.iso`
+- `boot-evidence.tar.gz` — real VM screenshots, OCR, logs, manifests and test report
+- `source-sha.txt` and `build-metadata.json` — exact source/run identity and image digest
+- `SHA256SUMS` — verify with `sha256sum -c SHA256SUMS` after downloading all five together
+
+Tags use `build-<run-id>-<build-attempt>-<source-SHA-prefix>`. The workflow never
+moves tags, overwrites assets or deletes old releases. It uploads to a draft,
+checks every asset's server SHA-256 digest, then publishes. A retry reconciles the
+same build's existing release/assets; a conflict fails safely. “Immutable” here is
+a workflow guarantee, not a claim that repository-level immutable releases are enabled.
+
+Only the isolated release job has `contents: write`; it cannot run for PRs,
+forks or non-main branches. Failed boot/UI tests never publish a release.
+Release assets have no configured expiry and are separate from diagnostic Actions
+artifacts, which still expire after 14 days. No new repository secrets are needed.
+
 ## Build and boot
 
 On a disposable Linux builder with Docker, QEMU, Python 3, Pillow and Tesseract installed:
@@ -37,7 +62,7 @@ GitHub Actions builds the ISO, then boots it with QEMU (TCG, 4 GiB RAM, no netwo
 
 The artifacts contain screenshots, OCR text, serial/QEMU logs, a machine-readable test report, source SHA, exact package manifest, ISO and SHA-256 checksums. This is real boot/UI testing, **not pixel-diff testing**, and it does not prove security hardening or compatibility with real hardware. Failure evidence is uploaded too; read `test-report.json` and the workflow conclusion before claiming a pass.
 
-Find the exact commit's run under [Actions](https://github.com/newdarwindev/emacs-kiosk-demo/actions). Download `boot-evidence-<run-id>-<commit>` (14-day retention). A successful static-check job alone is not a passing build/boot result.
+Find the exact commit's run under [Actions](https://github.com/newdarwindev/emacs-kiosk-demo/actions). Download `boot-evidence-<run-id>-<build-attempt>-<commit>` (14-day retention), or use the durable assets on the [Releases page](https://github.com/newdarwindev/emacs-kiosk-demo/releases). A successful static-check job alone is not a passing build/boot result.
 
 ## Inside the demo
 

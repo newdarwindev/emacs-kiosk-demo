@@ -13,14 +13,27 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
       - run: make check
   boot-and-visual:
     needs: checks
     runs-on: ubuntu-24.04
     timeout-minutes: 35
+    outputs:
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+      release-tag: ${{ steps.identity.outputs.release-tag }}
+      build-attempt: ${{ steps.identity.outputs.build-attempt }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+      - name: Record immutable build identity
+        id: identity
+        run: |
+          echo "release-tag=build-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${GITHUB_SHA:0:12}" >> "$GITHUB_OUTPUT"
+          echo "build-attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
       - name: Install isolated VM and screenshot tools
         run: sudo apt-get update && sudo apt-get install -y qemu-system-x86 tesseract-ocr python3-pil
       - name: Build real bootable Alpine ISO
@@ -31,12 +44,47 @@ jobs:
         if: always()
         run: make evidence
       - name: Upload exact-run image and evidence
+        id: upload
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
-          name: boot-evidence-${{ github.run_id }}-${{ github.sha }}
+          name: boot-evidence-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}
           path: |
             evidence/
             build/*.iso
           if-no-files-found: error
           retention-days: 14
+  release:
+    needs: [checks, boot-and-visual]
+    if: >-
+      github.repository == 'newdarwindev/emacs-kiosk-demo' &&
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      needs.boot-and-visual.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Download only this build job's exact artifact
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with:
+          artifact-ids: ${{ needs.boot-and-visual.outputs.artifact-id }}
+          path: release-input
+          merge-multiple: true
+      - name: Validate boot evidence and prepare allowlisted assets
+        env:
+          RELEASE_TAG: ${{ needs.boot-and-visual.outputs.release-tag }}
+          BUILD_ATTEMPT: ${{ needs.boot-and-visual.outputs.build-attempt }}
+        run: python3 scripts/release.py prepare
+      - name: Reconcile draft, verify every asset digest, then publish prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.boot-and-visual.outputs.release-tag }}
+          BUILD_ATTEMPT: ${{ needs.boot-and-visual.outputs.build-attempt }}
+        run: python3 scripts/release.py publish
