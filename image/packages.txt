@@ -1,11 +1,11 @@
 alpine-baselayout
 busybox
 linux-lts
+linux-firmware-none
 kmod
 eudev
 xorg-server
 xf86-input-libinput
-mesa-dri-gallium
 openbox
 emacs-x11
 font-dejavu

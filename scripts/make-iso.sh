@@ -14,7 +14,7 @@ chroot "$root" addgroup -g 1000 kiosk
 chroot "$root" adduser -D -u 1000 -G kiosk -h /home/kiosk kiosk
 # Both accounts locked; no login daemon runs.
 chroot "$root" passwd -l root
-chroot "$root" passwd -l kiosk
+grep -q '^kiosk:!' "$root/etc/shadow"
 cp /src/image/init "$root/init"
 cp /src/image/start-kiosk.sh /src/image/emacs-init.el /src/scripts/demo-agent.sh /src/scripts/slack-mock.py "$root/opt/kiosk/"
 cp /src/fixtures/slack-events.json "$root/opt/kiosk/slack-events.json"

@@ -12,7 +12,7 @@ exec >/dev/ttyS0 2>&1
 set -x
 hostname emacs-kiosk
 printf 'KIOSK_LINUX_BOOT kernel=%s\n' "$(uname -r)"
-/usr/lib/udev/udevd --daemon
+/sbin/udevd --daemon
 udevadm trigger --action=add
 udevadm settle --timeout=30
 modprobe bochs || true
