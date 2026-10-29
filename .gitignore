@@ -1,0 +1,16 @@
+/build/
+/dist/
+/evidence/
+*.iso
+*.qcow2
+*.log
+*.png
+*.mp4
+*.cast
+*.tmp
+.env
+.env.*
+!.env.example
+
+__pycache__/
+*.pyc

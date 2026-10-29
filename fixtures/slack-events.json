@@ -1,0 +1,4 @@
+[
+  {"type":"message","channel":"DEMO-OFFLINE","user":"SYNTHETIC_USER","text":"Review the sample buffer","ts":"2000000000.000001"},
+  {"type":"reaction_added","channel":"DEMO-OFFLINE","user":"SYNTHETIC_USER","reaction":"white_check_mark","ts":"2000000000.000002"}
+]

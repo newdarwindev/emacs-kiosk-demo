@@ -1,0 +1,42 @@
+name: Linux image and visual boot
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: linux-image-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - run: make check
+  boot-and-visual:
+    needs: checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Install isolated VM and screenshot tools
+        run: sudo apt-get update && sudo apt-get install -y qemu-system-x86 tesseract-ocr python3-pil
+      - name: Build real bootable Alpine ISO
+        run: make image ARCH=x86_64
+      - name: Boot ISO and interact through VM keyboard
+        run: make visual ARCH=x86_64
+      - name: Package evidence even after failure
+        if: always()
+        run: make evidence
+      - name: Upload exact-run image and evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: boot-evidence-${{ github.run_id }}-${{ github.sha }}
+          path: |
+            evidence/
+            build/*.iso
+          if-no-files-found: error
+          retention-days: 14

@@ -1,0 +1,11 @@
+# Allowlist: no checkout metadata, credentials, host homes, or evidence.
+*
+!Dockerfile
+!image/
+!image/**
+!fixtures/
+!fixtures/slack-events.json
+!scripts/
+!scripts/make-iso.sh
+!scripts/demo-agent.sh
+!scripts/slack-mock.py
